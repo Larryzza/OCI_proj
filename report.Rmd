@@ -1,0 +1,121 @@
+---
+title: "Preliminary viral trajectory analysis"
+author: Zian ZHUANG
+output:
+  html_document:
+    highlight: pygments
+    toc: yes
+    toc_float: yes
+---
+
+<!-- Setup -->
+<style type="text/css">
+body{ /* Normal  */
+      font-size: 17px;
+      font-family: "Times New Roman";
+  }
+h1,h2,h3,h4,h5,h6{
+  font-family: "Times New Roman";
+}
+</style>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', message = FALSE)
+library(knitr)
+library(KMsurv)
+library(ggplot2)
+library(survival)
+library(tidyverse)
+library(kableExtra)
+```
+<!-- Begin writing -->
+
+## 1 Method
+
+Generally, our model uses the same framework as Stephen *et al.*'s work. Since we only have one group, we did not use the Hierarchical structural (Variant vs NonVariant). 
+
+We removed sequences of 3 or more consecutive negative tests (Ct = 40) to avoid overfitting to these trivial values.
+
+For the main analysis, prior information is from a previous analysis [(Kissler *.et al*)](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3001333). We also conducted a sensitivity analysis using vague priors as well as a strongly biased set of priors to assess robustness to the choice of prior.
+
+## 2 Major finding 
+
+```{r, warning=FALSE, echo=FALSE}
+convert_Ct_logGEML <- function(Ct, m_conv=-3.609714286, b_conv=40.93733333){
+  out <- (Ct-b_conv)/m_conv * log10(10) + log10(250)
+  return(out) 
+}
+```
+
+
+### 2.1 Informative priors 
+
+Priors setting
+![](1.png)
+
+Plots for Ct values and estimated trajectories for infections 
+
+```{r, warning=FALSE, echo=FALSE}
+infor.p <- readRDS("2_output.rds")
+infor.p[["plot"]]
+t1 <- infor.p[["summary"]]
+t1$temp <- paste0(t1$mean, "(", t1$lwr, ",", t1$upr, ")")
+```
+
+### 2.2 Uninformative priors
+
+Priors setting
+![](2.png)
+
+Plots for Ct values and estimated trajectories for infections 
+
+```{r, warning=FALSE, echo=FALSE}
+uninfor.p <- readRDS("1_output.rds")
+uninfor.p[["plot"]]
+t2 <- uninfor.p[["summary"]]
+t2$temp <- paste0(t2$mean, "(", t2$lwr, ",", t2$upr, ")")
+```
+
+### 2.3 Biased set of priors
+
+Priors setting
+![](3.png)
+
+Plots for Ct values and estimated trajectories for infections 
+
+```{r, warning=FALSE, echo=FALSE}
+biased.p <- readRDS("3_output.rds")
+biased.p[["plot"]]
+t3 <- biased.p[["summary"]]
+t3$temp <- paste0(t3$mean, "(", t3$lwr, ",", t3$upr, ")")
+```
+
+### 2.4 Table for comparison
+
+```{r, warning=FALSE, echo=FALSE}
+df <- tibble("Vaccineed (Stephen et al.'s)"=c("5.5 (4.6, 6.6)",
+                                              "20.5 (19.0, 21.0)",
+                                              "3.2 (2.5, 4.0)"),
+             "unvaccinated (Stephen et al.'s)"=c("7.5(6.8, 8.2)",
+                                                 "20.7 (19.8, 20.2)",
+                                                 "3.5 (3.0, 4.0)"),
+             "informative proirs"=t1$temp,
+             "uninformative proirs"=t2$temp,
+             "biased proirs"=t3$temp,)
+
+row.names(df) <- c("mean clearance time",
+                   "mean peak Ct", 
+                   "mean proliferation time")
+
+df %>%
+  kbl(caption = "Estimated viral trajectories from different priors (95% CI)") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+- As we can tell from the comparison table, estimated values based on different priors (informative, uninformative and biased) are largely consistent. However, we estimated a much longer mean clearance time and a lower mean peak Ct from our data set, compared to the results in Stephen *et al.*'s paper.
+
+## 3 Note
+
+- Under the original parameter setting, divergent transitions occurs after warmup. I increased iteration times to 10,000 and the target acceptance rate 'adapt_delta' to 0.90 in Stan.
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
