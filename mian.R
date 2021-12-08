@@ -182,5 +182,20 @@ for(i in 1:length(run_pars_list)){
   saveRDS(output, paste0(i, "_output.rds"))
 }
 
+# show results
+# Uninformative priors
+df1 <- readRDS("1_output.rds")
+df1[["plot"]]
+df1[["summary"]]
+
+# Informative priors 
+df2 <- readRDS("2_output.rds")
+df2[["plot"]]
+df2[["summary"]]
+
+# Biased set of priors
+df3 <- readRDS("3_output.rds")
+df3[["plot"]]
+df3[["summary"]]
 
 
